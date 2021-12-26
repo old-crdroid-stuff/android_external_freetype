@@ -260,6 +260,15 @@
 
     if ( populate_map_and_metrics )
     {
+      FT_ULong  size;
+
+      /* reject too large bitmaps similarly to the rasterizer */
+      if ( imgHeight > 0x7FFF || imgWidth > 0x7FFF )
+      {
+        error = FT_THROW( Array_Too_Large );
+        goto DestroyExit;
+      }
+
       metrics->width  = (FT_UShort)imgWidth;
       metrics->height = (FT_UShort)imgHeight;
 
@@ -269,12 +278,12 @@
       map->pitch      = (int)( map->width * 4 );
       map->num_grays  = 256;
 
-      /* reject too large bitmaps similarly to the rasterizer */
-      if ( map->rows > 0x7FFF || map->width > 0x7FFF )
-      {
-        error = FT_THROW( Array_Too_Large );
+      /* this doesn't overflow: 0x7FFF * 0x7FFF * 4 < 2^32 */
+      size = map->rows * (FT_ULong)map->pitch;
+
+      error = ft_glyphslot_alloc_bitmap( slot, size );
+      if ( error )
         goto DestroyExit;
-      }
     }
 
     /* convert palette/gray image to rgb */
